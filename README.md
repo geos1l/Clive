@@ -1,0 +1,1 @@
+A MuJoCo clock robot that reads your presence, gaze, and emotions through a webcam and responds with expressive movement. Perception to behaviour end-to-end. 
