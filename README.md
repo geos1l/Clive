@@ -1,1 +1,1 @@
-A MuJoCo clock robot that reads your presence, gaze, and emotions through a webcam and responds with expressive movement. Perception to behaviour end-to-end. 
+A MuJoCo clock robot that reads your presence, gaze, and emotions through a webcam and responds with expressive movement. Perception to behaviour end-to-end. Inspired by Human Computer Lab's LeLamp.
