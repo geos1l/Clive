@@ -1,1 +1,5 @@
-A MuJoCo clock robot that reads your presence, gaze, and emotions through a webcam and responds with expressive movement. Perception to behaviour end-to-end. Inspired by Human Computer Lab's LeLamp.
+# Clive
+
+A simulated clock robot that perceives human presence and emotion through a webcam and responds with expressive body language. Real-time visual perception pipeline using MediaPipe and DeepFace, mapped to behavioral states in MuJoCo.
+
+Built as a proof of concept for visual perception for [Human Computer Lab](https://github.com/humancomputerlab)'s LeLamp.
