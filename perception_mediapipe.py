@@ -162,7 +162,7 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
               for idx in [468, 473, 33, 133, 263, 362, 1, 152, 10, 234, 454]:
                   x = int(lms[idx].x * w)
                   y = int(lms[idx].y * h)
-                  cv2.circle(annotated, (x, y), 3, (0, 0, 255), -1)
+                  cv2.circle(annotated, (x, y), 3, (255, 255, 255), -1)
         if hand_results.multi_hand_landmarks:
             for hand_lm in hand_results.multi_hand_landmarks:
                 mp.solutions.drawing_utils.draw_landmarks(
@@ -170,8 +170,12 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
                     hand_lm,
                     mp.solutions.hands.HAND_CONNECTIONS,
                 )
-        cv2.putText(annotated, f"gaze={gaze} nod={nod:.1f} turn={turn:.1f} wave={wave}",
-                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(annotated, f"gaze={gaze} nod={nod:.1f} turn={turn:.1f} wave={wave}", 
+                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        with state.lock:
+            current_emotion = state.emotion
+        cv2.putText(annotated, f"emotion={current_emotion}",
+                    (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         cv2.imshow("MediaPipe Debug", annotated)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -183,6 +187,7 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
             state.head_nod = nod
             state.head_turn = turn
             state.wave_detected = wave
+            state.latest_frame = frame.copy()
 
     cap.release()
 
