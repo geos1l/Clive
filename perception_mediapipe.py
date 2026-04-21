@@ -155,14 +155,25 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
               lms = face_results.multi_face_landmarks[0].landmark
               h, w = frame.shape[:2]
 
-              # Draw only the landmarks we use
-              # Iris: 468 (right), 473 (left)
-              # Eye corners: 33, 133 (right eye), 263, 362 (left eye)
-              # Head pose: 1 (nose), 152 (chin), 10 (forehead), 234 (right ear), 454 (left ear)
+              # Draw landmarks and skeleton connecting them
+              points = {}
               for idx in [468, 473, 33, 133, 263, 362, 1, 152, 10, 234, 454]:
                   x = int(lms[idx].x * w)
                   y = int(lms[idx].y * h)
-                  cv2.circle(annotated, (x, y), 3, (255, 255, 255), -1)
+                  points[idx] = (x, y)
+                  cv2.circle(annotated, (x, y), 3, (0, 0, 255), -1)
+
+              connections = [
+                  # Right eye triangle: outer—iris—inner—outer
+                  (33, 468), (468, 133), (133, 33),
+                  # Left eye triangle: outer—iris—inner—outer
+                  (263, 473), (473, 362), (362, 263),
+                  # Face frame
+                  (234, 1), (454, 1),      # ears to nose
+                  (10, 1), (1, 152),       # forehead to nose, nose to chin
+              ]
+              for a, b in connections:
+                  cv2.line(annotated, points[a], points[b], (255, 255, 255), 1)
         if hand_results.multi_hand_landmarks:
             for hand_lm in hand_results.multi_hand_landmarks:
                 mp.solutions.drawing_utils.draw_landmarks(
