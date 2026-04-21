@@ -58,13 +58,12 @@ def _estimate_head_pose(landmarks, frame_h: int, frame_w: int):
     roll = angles[2] # tilt: positive = tilting right 
     return pitch, roll
 
-def _detect_wave(hand_landmarks) -> bool:
+def _detect_wave(hand_landmarks, handedness: str) -> bool:
     """Wave = hand is high in frame with fingers extended"""
     wrist_y = hand_landmarks[0].y # 0.0 = top of frame, 1.0 = bottom
 
-    # Can play around/change this later, for now leave as top 60%  
-    # Hand must be in upper 60% of frame
-    if wrist_y > 0.6:
+    # Hand must be in upper 80% of frame
+    if wrist_y > 0.9:
         return False
     
     # Check if fingers are extended: fingertip y < knuckle y (y=0 is top)
@@ -76,10 +75,18 @@ def _detect_wave(hand_landmarks) -> bool:
         if hand_landmarks[t].y < hand_landmarks[k].y
     )
 
-    # Can add thumb later but have to compare x coords and left vs right hand matters
+    # Thumb: compare x not y. Direction depend on hand
+    thumb_tip_x = hand_landmarks[4].x
+    thumb_knuckle_x = hand_landmarks[2].x
+    if handedness == "Left": # mirrored, so left is actually right hand
+        thumb_extended = thumb_tip_x > thumb_knuckle_x
+    else:
+        thumb_extended = thumb_tip_x < thumb_knuckle_x
+    
+    if thumb_extended:
+        extended += 1
 
-    return extended >= 3 # at least 3 fingers up
-    # Can lowk change this to be 4 lets start with 3 tho
+    return extended >= 4 # at least 4 fingers up
 
 
 def run_mediapipe(state: PerceptionState, camera_index: int = 0):
@@ -91,9 +98,9 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
         min_tracking_confidence=0.5,
     )
     mp_hands = mp.solutions.hands.Hands(
-        max_num_hands=1,    # add 2 later
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
+        max_num_hands=2,
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7,
     )
 
     cap = cv2.VideoCapture(camera_index)
@@ -122,17 +129,28 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
             nod, tilt = _estimate_head_pose(landmarks, h, w)
 
         if hand_results.multi_hand_landmarks:
-            hand_lm = hand_results.multi_hand_landmarks[0].landmark
-            wave = _detect_wave(hand_lm)
+            wave = any(
+                _detect_wave(
+                    hand_lm.landmark,
+                    hand_results.multi_handedness[i].classification[0].label,
+                    )
+                for i, hand_lm in enumerate(hand_results.multi_hand_landmarks)
+            ) 
 
         # Draw skeleton on camera 
         annotated = frame.copy()
         if face_present:
-            mp.solutions.drawing_utils.draw_landmarks(
-                annotated,
-                face_results.multi_face_landmarks[0],
-                mp.solutions.face_mesh.FACEMESH_TESSELATION,
-            )
+              lms = face_results.multi_face_landmarks[0].landmark
+              h, w = frame.shape[:2]
+
+              # Draw only the landmarks we use
+              # Iris: 468 (right), 473 (left)
+              # Eye corners: 33, 133 (right eye), 263, 362 (left eye)
+              # Head pose: 1, 152, 61, 291
+              for idx in [468, 473, 33, 133, 263, 362, 1, 152, 61, 291]:
+                  x = int(lms[idx].x * w)
+                  y = int(lms[idx].y * h)
+                  cv2.circle(annotated, (x, y), 3, (0, 0, 255), -1)
         if hand_results.multi_hand_landmarks:
             for hand_lm in hand_results.multi_hand_landmarks:
                 mp.solutions.drawing_utils.draw_landmarks(
