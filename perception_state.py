@@ -9,7 +9,7 @@ class PerceptionState:
     face_present: bool = False
     gaze_on_clive: bool = False
     head_nod: float = 0.0       # pitch in degrees, positive = nodding down
-    head_tilt: float = 0.0      # roll in degrees
+    head_turn: float = 0.0      # yaw in degrees, positive = turned right
     wave_detected: bool = False
 
     # DeepFace signal (updated every 2-3 sec)
