@@ -174,8 +174,11 @@ def run_mediapipe(state: PerceptionState, camera_index: int = 0):
                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         with state.lock:
             current_emotion = state.emotion
+            current_state = state.emotional_state
         cv2.putText(annotated, f"emotion={current_emotion}",
                     (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv2.putText(annotated, f"STATE={current_state}",
+                    (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
         cv2.imshow("MediaPipe Debug", annotated)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
