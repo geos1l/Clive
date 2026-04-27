@@ -1,0 +1,118 @@
+<mujoco model="clive">
+  <compiler angle="radian" coordinate="local" autolimits="true" meshdir="meshes"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <!--
+    Coordinate system:
+        +X = left/right across the clock face
+        +Y = backward; clock face points toward -Y
+        +Z = up
+
+    Grounded pose rig:
+        - both foot pads are fixed to world
+        - one shared ankle hinge moves both legs together
+        - one shared knee hinge bends both knees together
+        - one hip hinge pitches the cape/clock relative to the upper legs
+
+    This keeps the robot connected and avoids a two-foot closed-loop balance
+    problem while the feet are intentionally welded to the ground.
+  -->
+
+  <visual>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-90" elevation="-15"/>
+  </visual>
+
+  <asset>
+    <mesh name="cape_mesh" file="cape.stl"/>
+    <mesh name="clock_mesh" file="clock_head.stl"/>
+  </asset>
+
+  <default>
+    <joint damping="0.8" armature="0.01"/>
+    <geom friction="1 0.05 0.01" density="500"/>
+    <default class="leg">
+      <geom rgba="0.10 0.10 0.12 1"/>
+    </default>
+    <default class="joint_pin">
+      <geom rgba="0.02 0.02 0.025 1"/>
+    </default>
+    <default class="cape">
+      <geom rgba="0.015 0.015 0.018 1" contype="0" conaffinity="0"/>
+    </default>
+    <default class="head">
+      <geom rgba="0.94 0.93 0.88 1" contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light pos="0.3 -0.4 0.6" dir="-0.2 0.4 -1" diffuse="0.9 0.9 0.9"/>
+    <light pos="-0.3 -0.4 0.6" dir="0.2 0.4 -1" diffuse="0.4 0.4 0.45"/>
+    <geom name="ground" type="plane" size="1 1 0.05" rgba="0.82 0.82 0.86 1"/>
+
+    <camera name="frontview" pos="0 -0.42 0.13" xyaxes="1 0 0  0 0 1"/>
+
+    <body name="feet_base" pos="0 0 0.0035">
+      <geom name="left_foot" class="leg" type="box" pos="-0.03556 0 0" size="0.014 0.016 0.0035"/>
+      <geom name="right_foot" class="leg" type="box" pos="0.03556 0 0" size="0.014 0.016 0.0035"/>
+
+      <body name="lower_legs" pos="0 0 0.0035">
+        <joint name="ankle_pitch" type="hinge" axis="1 0 0" range="-1.2 1.2"/>
+
+        <geom class="joint_pin" type="cylinder" fromto="-0.04356 0 0  -0.02756 0 0" size="0.006"/>
+        <geom class="joint_pin" type="cylinder" fromto="0.02756 0 0  0.04356 0 0" size="0.006"/>
+        <geom class="leg" type="box" pos="-0.03556 0 0.017" size="0.008 0.006 0.014"/>
+        <geom class="leg" type="box" pos="0.03556 0 0.017" size="0.008 0.006 0.014"/>
+
+        <body name="upper_legs" pos="0 0 0.032">
+          <joint name="knee_pitch" type="hinge" axis="1 0 0" range="-1.5708 0"/>
+
+          <geom class="joint_pin" type="cylinder" fromto="-0.04356 0 0  -0.02756 0 0" size="0.0062"/>
+          <geom class="joint_pin" type="cylinder" fromto="0.02756 0 0  0.04356 0 0" size="0.0062"/>
+          <geom class="leg" type="box" pos="-0.03556 0 0.017" size="0.008 0.006 0.014"/>
+          <geom class="leg" type="box" pos="0.03556 0 0.017" size="0.008 0.006 0.014"/>
+
+          <body name="hip_mount" pos="0 0 0.032">
+            <geom class="joint_pin" type="cylinder" fromto="-0.04356 0 0  -0.02756 0 0" size="0.0064"/>
+            <geom class="joint_pin" type="cylinder" fromto="0.02756 0 0  0.04356 0 0" size="0.0064"/>
+            <geom class="joint_pin" type="cylinder" fromto="-0.03556 0 0.0005  -0.03556 0 0.0070" size="0.0052"/>
+            <geom class="joint_pin" type="cylinder" fromto="0.03556 0 0.0005  0.03556 0 0.0070" size="0.0052"/>
+
+            <body name="cape_body" pos="0 0 0.007">
+              <joint name="hip_pitch" type="hinge" axis="1 0 0" range="-1.5708 1.5708"/>
+              <inertial pos="0 0 0.03" mass="0.10"
+                        diaginertia="0.00012 0.00012 0.00006"/>
+              <geom class="cape" type="mesh" mesh="cape_mesh" pos="-0.00475 -0.0178 0"/>
+
+              <!-- Clock head spins in place around its face axis (+Y). -->
+              <body name="clock_head" pos="0 0 0.0533">
+                <joint name="head_spin" type="hinge" axis="0 1 0" range="-1.0 1.0"/>
+                <inertial pos="0 0 0" mass="0.12"
+                          diaginertia="0.00012 0.00018 0.00012"/>
+                <geom class="head" type="mesh" mesh="clock_mesh" pos="0 0.0178 0"/>
+                <!-- Small top hat attached to the top of the clock cylinder. -->
+                <geom name="top_hat_brim" type="box" rgba="0.02 0.02 0.025 1"
+                      pos="0 0 0.0533" size="0.020 0.0178 0.0025"/>
+                <geom name="top_hat_crown" type="box" rgba="0.02 0.02 0.025 1"
+                      pos="0 0 0.0630" size="0.012 0.0178 0.0072"/>
+                <geom type="capsule" rgba="0.08 0.08 0.08 1"
+                      fromto="0 -0.020 0  -0.018 -0.020 0.0312" size="0.00125"/>
+                <geom type="capsule" rgba="0.08 0.08 0.08 1"
+                      fromto="0 -0.020 0   0.039 -0.020 0.0225" size="0.00125"/>
+                <geom type="cylinder" rgba="0.08 0.08 0.08 1"
+                      fromto="0 -0.018 0  0 -0.022 0" size="0.005"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="ankle_pitch_pos" joint="ankle_pitch" kp="900" kv="36" ctrlrange="-1.2 1.2"/>
+    <position name="knee_pitch_pos"  joint="knee_pitch"  kp="900" kv="36" ctrlrange="-1.5708 0"/>
+    <position name="hip_pitch_pos"   joint="hip_pitch"   kp="900" kv="36" ctrlrange="-1.5708 1.5708"/>
+    <position name="head_spin_pos"   joint="head_spin"   kp="300" kv="18" ctrlrange="-1.0 1.0"/>
+  </actuator>
+</mujoco>
